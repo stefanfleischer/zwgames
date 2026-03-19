@@ -257,3 +257,51 @@ a {
     transform: translateY(0);
   }
 }
+
+/* Word Search game animations */
+.ws-flash {
+  animation: ws-flash 600ms ease-out;
+}
+
+@keyframes ws-flash {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.2); background-color: var(--lagoon); }
+  60% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.ws-shake {
+  animation: ws-shake 400ms ease-out;
+}
+
+@keyframes ws-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+.ws-found-word {
+  animation: ws-pop-in 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes ws-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ws-win {
+  animation: ws-win-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes ws-win-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}

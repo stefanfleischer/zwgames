@@ -57,6 +57,13 @@ export default function Header() {
             Home
           </Link>
           <Link
+            to="/games/word-search"
+            className="nav-link"
+            activeProps={{ className: 'nav-link is-active' }}
+          >
+            字谜
+          </Link>
+          <Link
             to="/about"
             className="nav-link"
             activeProps={{ className: 'nav-link is-active' }}
