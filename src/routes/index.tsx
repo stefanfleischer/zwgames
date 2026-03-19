@@ -1,79 +1,298 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  GRID_SIZE,
+  WORD_COUNT,
+  generatePuzzle,
+  isAdjacent,
+  checkMatch,
+  type Puzzle,
+} from '../lib/word-search'
 
-export const Route = createFileRoute('/')({ component: App })
+export const Route = createFileRoute('/')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    hsk: Math.min(6, Math.max(1, Number(search.hsk) || 1)),
+  }),
+  component: WordSearchGame,
+})
 
-function App() {
+const WORD_COLORS = [
+  '#e74c3c',
+  '#e67e22',
+  '#f1c40f',
+  '#2ecc71',
+  '#1abc9c',
+  '#3498db',
+  '#9b59b6',
+  '#e84393',
+  '#00b894',
+  '#6c5ce7',
+]
+
+function WordSearchGame() {
+  const { hsk } = Route.useSearch()
+  const navigate = useNavigate()
+
+  const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
+  const [foundIndices, setFoundIndices] = useState<Set<number>>(new Set())
+  const [selectedPath, setSelectedPath] = useState<[number, number][]>([])
+  const [isSelecting, setIsSelecting] = useState(false)
+  const [flashCells, setFlashCells] = useState<Set<string> | null>(null)
+  const [hints, setHints] = useState<number[]>([])
+  const [shakeWrong, setShakeWrong] = useState(false)
+  const gridRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setPuzzle(generatePuzzle(hsk))
+    setFoundIndices(new Set())
+    setSelectedPath([])
+    setHints([])
+  }, [hsk])
+
+  const foundCellColors = useMemo(() => {
+    if (!puzzle) return new Map<string, number>()
+    const map = new Map<string, number>()
+    foundIndices.forEach((idx) => {
+      puzzle.placedWords[idx].cells.forEach(([r, c]) => {
+        map.set(`${r},${c}`, idx)
+      })
+    })
+    return map
+  }, [puzzle, foundIndices])
+
+  const selectedSet = useMemo(
+    () => new Set(selectedPath.map(([r, c]) => `${r},${c}`)),
+    [selectedPath],
+  )
+
+  const getCellFromPoint = useCallback(
+    (x: number, y: number): [number, number] | null => {
+      const el = document.elementFromPoint(x, y)
+      if (!el) return null
+      const row = el.getAttribute('data-row')
+      const col = el.getAttribute('data-col')
+      if (row === null || col === null) return null
+      return [parseInt(row), parseInt(col)]
+    },
+    [],
+  )
+
+  const handlePointerDown = useCallback(
+    (r: number, c: number) => {
+      if (!puzzle) return
+      setIsSelecting(true)
+      setSelectedPath([[r, c]])
+    },
+    [puzzle],
+  )
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isSelecting || !puzzle) return
+      const cell = getCellFromPoint(e.clientX, e.clientY)
+      if (!cell) return
+      const [r, c] = cell
+      const key = `${r},${c}`
+
+      if (selectedSet.has(key)) {
+        if (
+          selectedPath.length >= 2 &&
+          selectedPath[selectedPath.length - 2][0] === r &&
+          selectedPath[selectedPath.length - 2][1] === c
+        ) {
+          setSelectedPath((p) => p.slice(0, -1))
+        }
+        return
+      }
+
+      const last = selectedPath[selectedPath.length - 1]
+      if (last && isAdjacent(last, [r, c])) {
+        setSelectedPath((p) => [...p, [r, c]])
+      }
+    },
+    [isSelecting, puzzle, selectedPath, selectedSet, getCellFromPoint],
+  )
+
+  const handlePointerUp = useCallback(() => {
+    if (!isSelecting || !puzzle) return
+    setIsSelecting(false)
+
+    if (selectedPath.length >= 2) {
+      const matchIdx = checkMatch(
+        selectedPath,
+        puzzle.grid,
+        puzzle.placedWords,
+        foundIndices,
+      )
+      if (matchIdx !== null) {
+        const cellKeys = new Set(
+          puzzle.placedWords[matchIdx].cells.map(([r, c]) => `${r},${c}`),
+        )
+        setFlashCells(cellKeys)
+        setTimeout(() => {
+          setFoundIndices((prev) => new Set([...prev, matchIdx]))
+          setFlashCells(null)
+        }, 600)
+      } else {
+        setShakeWrong(true)
+        setTimeout(() => setShakeWrong(false), 400)
+      }
+    }
+    setSelectedPath([])
+  }, [isSelecting, puzzle, selectedPath, foundIndices])
+
+  const handleNewGame = () => {
+    setPuzzle(generatePuzzle(hsk))
+    setFoundIndices(new Set())
+    setSelectedPath([])
+    setHints([])
+  }
+
+  const handleHint = () => {
+    if (!puzzle) return
+    const unfound = puzzle.placedWords
+      .map((_, i) => i)
+      .filter((i) => !foundIndices.has(i) && !hints.includes(i))
+    if (unfound.length === 0) return
+    const pick = unfound[Math.floor(Math.random() * unfound.length)]
+    setHints((h) => [...h, pick])
+  }
+
+  const setLevel = (level: number) => {
+    navigate({ to: '/', search: { hsk: level } })
+  }
+
+  const isWon = puzzle !== null && foundIndices.size === WORD_COUNT
+
+  if (!puzzle) return null
+
   return (
-    <main className="page-wrap px-4 pb-8 pt-14">
-      <section className="island-shell rise-in relative overflow-hidden rounded-[2rem] px-6 py-10 sm:px-10 sm:py-14">
-        <div className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(79,184,178,0.32),transparent_66%)]" />
-        <div className="pointer-events-none absolute -bottom-20 -right-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(47,106,74,0.18),transparent_66%)]" />
-        <p className="island-kicker mb-3">TanStack Start Base Template</p>
-        <h1 className="display-title mb-5 max-w-3xl text-4xl leading-[1.02] font-bold tracking-tight text-[var(--sea-ink)] sm:text-6xl">
-          Start simple, ship quickly.
-        </h1>
-        <p className="mb-8 max-w-2xl text-base text-[var(--sea-ink-soft)] sm:text-lg">
-          This base starter intentionally keeps things light: two routes, clean
-          structure, and the essentials you need to build from scratch.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <a
-            href="/games/word-search"
-            className="rounded-full border border-[rgba(50,143,151,0.3)] bg-[rgba(79,184,178,0.14)] px-5 py-2.5 text-sm font-semibold text-[var(--lagoon-deep)] no-underline transition hover:-translate-y-0.5 hover:bg-[rgba(79,184,178,0.24)]"
+    <main className="mx-auto max-w-lg px-3 pb-6 pt-3">
+      {/* HSK Level Pills */}
+      <div className="mb-4 flex items-center justify-center gap-1.5">
+        {[1, 2, 3, 4, 5, 6].map((level) => (
+          <button
+            key={level}
+            onClick={() => setLevel(level)}
+            className={`hsk-pill ${hsk === level ? 'active' : ''}`}
           >
-            字谜 — Wortsuche spielen
-          </a>
-        </div>
-      </section>
-
-      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          [
-            'Type-Safe Routing',
-            'Routes and links stay in sync across every page.',
-          ],
-          [
-            'Server Functions',
-            'Call server code from your UI without creating API boilerplate.',
-          ],
-          [
-            'Streaming by Default',
-            'Ship progressively rendered responses for faster experiences.',
-          ],
-          [
-            'Tailwind Native',
-            'Design quickly with utility-first styling and reusable tokens.',
-          ],
-        ].map(([title, desc], index) => (
-          <article
-            key={title}
-            className="island-shell feature-card rise-in rounded-2xl p-5"
-            style={{ animationDelay: `${index * 90 + 80}ms` }}
-          >
-            <h2 className="mb-2 text-base font-semibold text-[var(--sea-ink)]">
-              {title}
-            </h2>
-            <p className="m-0 text-sm text-[var(--sea-ink-soft)]">{desc}</p>
-          </article>
+            {level}
+          </button>
         ))}
-      </section>
+      </div>
 
-      <section className="island-shell mt-8 rounded-2xl p-6">
-        <p className="island-kicker mb-2">Quick Start</p>
-        <ul className="m-0 list-disc space-y-2 pl-5 text-sm text-[var(--sea-ink-soft)]">
-          <li>
-            Edit <code>src/routes/index.tsx</code> to customize the home page.
-          </li>
-          <li>
-            Update <code>src/components/Header.tsx</code> and{' '}
-            <code>src/components/Footer.tsx</code> for brand links.
-          </li>
-          <li>
-            Add routes in <code>src/routes</code> and tweak visual tokens in{' '}
-            <code>src/styles.css</code>.
-          </li>
-        </ul>
-      </section>
+      {/* Progress bar */}
+      <div className="mb-4">
+        <div className="progress-track">
+          <div
+            className="progress-fill"
+            style={{ width: `${(foundIndices.size / WORD_COUNT) * 100}%` }}
+          />
+        </div>
+        <p className="mt-1.5 text-center text-xs font-medium text-[var(--text-muted)]">
+          {foundIndices.size} / {WORD_COUNT}
+        </p>
+      </div>
+
+      {/* Win */}
+      {isWon && (
+        <div className="ws-win mb-4 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 p-3 text-center">
+          <p className="text-base font-bold text-[var(--accent)]">
+            Alle gefunden!
+          </p>
+        </div>
+      )}
+
+      {/* Grid */}
+      <div
+        ref={gridRef}
+        className={`game-grid mx-auto ${shakeWrong ? 'ws-shake' : ''}`}
+        style={{
+          gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
+        }}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        {puzzle.grid.map((row, r) =>
+          row.map((char, c) => {
+            const key = `${r},${c}`
+            const isSelected = selectedSet.has(key)
+            const foundIdx = foundCellColors.get(key)
+            const isFound = foundIdx !== undefined
+            const isFlashing = flashCells?.has(key)
+
+            let cellClass = 'cell'
+            if (isFlashing) cellClass += ' cell-flash'
+            else if (isSelected) cellClass += ' cell-selected'
+            else if (isFound) cellClass += ' cell-found'
+
+            return (
+              <button
+                key={key}
+                data-row={r}
+                data-col={c}
+                onPointerDown={(e) => {
+                  e.preventDefault()
+                  ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+                  handlePointerDown(r, c)
+                }}
+                className={cellClass}
+                style={
+                  isFound && !isFlashing
+                    ? { backgroundColor: WORD_COLORS[foundIdx % WORD_COLORS.length], color: '#fff' }
+                    : undefined
+                }
+              >
+                {char}
+              </button>
+            )
+          }),
+        )}
+      </div>
+
+      {/* Buttons */}
+      <div className="mt-4 flex justify-center gap-2">
+        <button onClick={handleNewGame} className="btn btn-secondary">
+          Neu
+        </button>
+        <button onClick={handleHint} disabled={isWon} className="btn btn-primary">
+          Tipp
+        </button>
+      </div>
+
+      {/* Hints */}
+      {hints.length > 0 && (
+        <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+          {hints.map((idx) => (
+            <span
+              key={idx}
+              className={`hint-chip ${foundIndices.has(idx) ? 'found' : ''}`}
+            >
+              {puzzle.placedWords[idx].word.pinyin} — {puzzle.placedWords[idx].word.english}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Found words */}
+      {foundIndices.size > 0 && (
+        <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+          {[...foundIndices].map((idx) => {
+            const w = puzzle.placedWords[idx].word
+            return (
+              <div
+                key={idx}
+                className="ws-found-word found-chip"
+                style={{ backgroundColor: WORD_COLORS[idx % WORD_COLORS.length] }}
+              >
+                <span className="font-bold">{w.hanzi}</span>
+                <span className="opacity-80">{w.pinyin}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </main>
   )
 }
