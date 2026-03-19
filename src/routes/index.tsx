@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   GRID_SIZE,
   WORD_COUNT,
@@ -65,68 +65,95 @@ function WordSearchGame() {
     [selectedPath],
   )
 
+  // Use refs for touch handlers to avoid stale closures
+  const selectingRef = useRef(false)
+  const pathRef = useRef<[number, number][]>([])
+  const pathSetRef = useRef<Set<string>>(new Set())
+  const foundRef = useRef<Set<number>>(new Set())
+  const puzzleRef = useRef<Puzzle | null>(null)
+
+  // Keep refs in sync
+  useEffect(() => { foundRef.current = foundIndices }, [foundIndices])
+  useEffect(() => { puzzleRef.current = puzzle }, [puzzle])
+
   const getCellFromPoint = useCallback(
     (x: number, y: number): [number, number] | null => {
       const el = document.elementFromPoint(x, y)
       if (!el) return null
-      const row = el.getAttribute('data-row')
-      const col = el.getAttribute('data-col')
+      const target = (el as HTMLElement).closest('[data-row]') as HTMLElement | null
+      if (!target) return null
+      const row = target.getAttribute('data-row')
+      const col = target.getAttribute('data-col')
       if (row === null || col === null) return null
       return [parseInt(row), parseInt(col)]
     },
     [],
   )
 
-  const handlePointerDown = useCallback(
-    (r: number, c: number) => {
-      if (!puzzle) return
+  const updatePath = useCallback((newPath: [number, number][]) => {
+    pathRef.current = newPath
+    pathSetRef.current = new Set(newPath.map(([r, c]) => `${r},${c}`))
+    setSelectedPath(newPath)
+  }, [])
+
+  const startSelection = useCallback(
+    (x: number, y: number) => {
+      if (!puzzleRef.current) return
+      const cell = getCellFromPoint(x, y)
+      if (!cell) return
+      selectingRef.current = true
       setIsSelecting(true)
-      setSelectedPath([[r, c]])
+      updatePath([cell])
     },
-    [puzzle],
+    [getCellFromPoint, updatePath],
   )
 
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (!isSelecting || !puzzle) return
-      const cell = getCellFromPoint(e.clientX, e.clientY)
+  const moveSelection = useCallback(
+    (x: number, y: number) => {
+      if (!selectingRef.current || !puzzleRef.current) return
+      const cell = getCellFromPoint(x, y)
       if (!cell) return
       const [r, c] = cell
       const key = `${r},${c}`
+      const path = pathRef.current
+      const pathSet = pathSetRef.current
 
-      if (selectedSet.has(key)) {
+      if (pathSet.has(key)) {
+        // Backtracking
         if (
-          selectedPath.length >= 2 &&
-          selectedPath[selectedPath.length - 2][0] === r &&
-          selectedPath[selectedPath.length - 2][1] === c
+          path.length >= 2 &&
+          path[path.length - 2][0] === r &&
+          path[path.length - 2][1] === c
         ) {
-          setSelectedPath((p) => p.slice(0, -1))
+          updatePath(path.slice(0, -1))
         }
         return
       }
 
-      const last = selectedPath[selectedPath.length - 1]
+      const last = path[path.length - 1]
       if (last && isAdjacent(last, [r, c])) {
-        setSelectedPath((p) => [...p, [r, c]])
+        updatePath([...path, [r, c]])
       }
     },
-    [isSelecting, puzzle, selectedPath, selectedSet, getCellFromPoint],
+    [getCellFromPoint, updatePath],
   )
 
-  const handlePointerUp = useCallback(() => {
-    if (!isSelecting || !puzzle) return
+  const endSelection = useCallback(() => {
+    if (!selectingRef.current || !puzzleRef.current) return
+    selectingRef.current = false
     setIsSelecting(false)
 
-    if (selectedPath.length >= 2) {
+    const path = pathRef.current
+    if (path.length >= 2) {
       const matchIdx = checkMatch(
-        selectedPath,
-        puzzle.grid,
-        puzzle.placedWords,
-        foundIndices,
+        path,
+        puzzleRef.current.grid,
+        puzzleRef.current.placedWords,
+        foundRef.current,
       )
       if (matchIdx !== null) {
         const cellKeys = new Set(
-          puzzle.placedWords[matchIdx].cells.map(([r, c]) => `${r},${c}`),
+          puzzleRef.current.placedWords[matchIdx].cells.map(([r, c]) => `${r},${c}`),
         )
         setFlashCells(cellKeys)
         setTimeout(() => {
@@ -138,8 +165,41 @@ function WordSearchGame() {
         setTimeout(() => setShakeWrong(false), 400)
       }
     }
-    setSelectedPath([])
-  }, [isSelecting, puzzle, selectedPath, foundIndices])
+    updatePath([])
+  }, [updatePath])
+
+  // Attach touch events directly to the grid element for reliable mobile handling
+  useLayoutEffect(() => {
+    const grid = gridRef.current
+    if (!grid) return
+
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault()
+      const t = e.touches[0]
+      startSelection(t.clientX, t.clientY)
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault()
+      const t = e.touches[0]
+      moveSelection(t.clientX, t.clientY)
+    }
+    const onTouchEnd = (e: TouchEvent) => {
+      e.preventDefault()
+      endSelection()
+    }
+
+    grid.addEventListener('touchstart', onTouchStart, { passive: false })
+    grid.addEventListener('touchmove', onTouchMove, { passive: false })
+    grid.addEventListener('touchend', onTouchEnd, { passive: false })
+    grid.addEventListener('touchcancel', onTouchEnd, { passive: false })
+
+    return () => {
+      grid.removeEventListener('touchstart', onTouchStart)
+      grid.removeEventListener('touchmove', onTouchMove)
+      grid.removeEventListener('touchend', onTouchEnd)
+      grid.removeEventListener('touchcancel', onTouchEnd)
+    }
+  }, [startSelection, moveSelection, endSelection])
 
   const handleNewGame = () => {
     setPuzzle(generatePuzzle(hsk))
@@ -210,9 +270,10 @@ function WordSearchGame() {
         style={{
           gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
         }}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
+        onMouseDown={(e) => startSelection(e.clientX, e.clientY)}
+        onMouseMove={(e) => moveSelection(e.clientX, e.clientY)}
+        onMouseUp={endSelection}
+        onMouseLeave={endSelection}
       >
         {puzzle.grid.map((row, r) =>
           row.map((char, c) => {
@@ -228,15 +289,10 @@ function WordSearchGame() {
             else if (isFound) cellClass += ' cell-found'
 
             return (
-              <button
+              <div
                 key={key}
                 data-row={r}
                 data-col={c}
-                onPointerDown={(e) => {
-                  e.preventDefault()
-                  ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
-                  handlePointerDown(r, c)
-                }}
                 className={cellClass}
                 style={
                   isFound && !isFlashing
@@ -245,7 +301,7 @@ function WordSearchGame() {
                 }
               >
                 {char}
-              </button>
+              </div>
             )
           }),
         )}
