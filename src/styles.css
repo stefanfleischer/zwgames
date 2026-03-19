@@ -121,6 +121,8 @@ a { color: var(--accent); text-decoration: none; }
   gap: 3px;
   touch-action: none;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   max-width: min(100%, 400px);
   padding: 6px;
   border-radius: 14px;
@@ -140,6 +142,9 @@ a { color: var(--accent); text-decoration: none; }
   font-weight: 700;
   cursor: pointer;
   transition: background-color 100ms, transform 100ms, color 100ms;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .cell-selected {
