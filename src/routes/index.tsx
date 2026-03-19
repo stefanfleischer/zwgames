@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   GRID_SIZE,
   WORD_COUNT,
@@ -168,38 +168,7 @@ function WordSearchGame() {
     updatePath([])
   }, [updatePath])
 
-  // Attach touch events directly to the grid element for reliable mobile handling
-  useLayoutEffect(() => {
-    const grid = gridRef.current
-    if (!grid) return
-
-    const onTouchStart = (e: TouchEvent) => {
-      e.preventDefault()
-      const t = e.touches[0]
-      startSelection(t.clientX, t.clientY)
-    }
-    const onTouchMove = (e: TouchEvent) => {
-      e.preventDefault()
-      const t = e.touches[0]
-      moveSelection(t.clientX, t.clientY)
-    }
-    const onTouchEnd = (e: TouchEvent) => {
-      e.preventDefault()
-      endSelection()
-    }
-
-    grid.addEventListener('touchstart', onTouchStart, { passive: false })
-    grid.addEventListener('touchmove', onTouchMove, { passive: false })
-    grid.addEventListener('touchend', onTouchEnd, { passive: false })
-    grid.addEventListener('touchcancel', onTouchEnd, { passive: false })
-
-    return () => {
-      grid.removeEventListener('touchstart', onTouchStart)
-      grid.removeEventListener('touchmove', onTouchMove)
-      grid.removeEventListener('touchend', onTouchEnd)
-      grid.removeEventListener('touchcancel', onTouchEnd)
-    }
-  }, [startSelection, moveSelection, endSelection])
+  // No native touch handler needed — we use pointer events with releasePointerCapture
 
   const handleNewGame = () => {
     setPuzzle(generatePuzzle(hsk))
@@ -270,10 +239,14 @@ function WordSearchGame() {
         style={{
           gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
         }}
-        onMouseDown={(e) => startSelection(e.clientX, e.clientY)}
-        onMouseMove={(e) => moveSelection(e.clientX, e.clientY)}
-        onMouseUp={endSelection}
-        onMouseLeave={endSelection}
+        onPointerDown={(e) => {
+          e.currentTarget.releasePointerCapture(e.pointerId)
+          startSelection(e.clientX, e.clientY)
+        }}
+        onPointerMove={(e) => moveSelection(e.clientX, e.clientY)}
+        onPointerUp={endSelection}
+        onPointerLeave={endSelection}
+        onPointerCancel={endSelection}
       >
         {puzzle.grid.map((row, r) =>
           row.map((char, c) => {
