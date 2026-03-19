@@ -270,7 +270,7 @@ function WordSearchGame() {
         style={{
           gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
         }}
-        onMouseDown={(e) => { e.preventDefault(); startSelection(e.clientX, e.clientY) }}
+        onMouseDown={(e) => startSelection(e.clientX, e.clientY)}
         onMouseMove={(e) => moveSelection(e.clientX, e.clientY)}
         onMouseUp={endSelection}
         onMouseLeave={endSelection}
