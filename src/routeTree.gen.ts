@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WordOrderRouteImport } from './routes/word-order'
 import { Route as WordChainRouteImport } from './routes/word-chain'
+import { Route as CrosswordRouteImport } from './routes/crossword'
 import { Route as IndexRouteImport } from './routes/index'
 
 const WordOrderRoute = WordOrderRouteImport.update({
@@ -23,6 +24,11 @@ const WordChainRoute = WordChainRouteImport.update({
   path: '/word-chain',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CrosswordRoute = CrosswordRouteImport.update({
+  id: '/crossword',
+  path: '/crossword',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,30 +37,34 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/crossword': typeof CrosswordRoute
   '/word-chain': typeof WordChainRoute
   '/word-order': typeof WordOrderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/crossword': typeof CrosswordRoute
   '/word-chain': typeof WordChainRoute
   '/word-order': typeof WordOrderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/crossword': typeof CrosswordRoute
   '/word-chain': typeof WordChainRoute
   '/word-order': typeof WordOrderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/word-chain' | '/word-order'
+  fullPaths: '/' | '/crossword' | '/word-chain' | '/word-order'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/word-chain' | '/word-order'
-  id: '__root__' | '/' | '/word-chain' | '/word-order'
+  to: '/' | '/crossword' | '/word-chain' | '/word-order'
+  id: '__root__' | '/' | '/crossword' | '/word-chain' | '/word-order'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CrosswordRoute: typeof CrosswordRoute
   WordChainRoute: typeof WordChainRoute
   WordOrderRoute: typeof WordOrderRoute
 }
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WordChainRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/crossword': {
+      id: '/crossword'
+      path: '/crossword'
+      fullPath: '/crossword'
+      preLoaderRoute: typeof CrosswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CrosswordRoute: CrosswordRoute,
   WordChainRoute: WordChainRoute,
   WordOrderRoute: WordOrderRoute,
 }

@@ -519,3 +519,101 @@ a { color: var(--accent); text-decoration: none; }
   background: rgba(231, 76, 60, 0.12);
   animation: ws-shake 400ms ease-out;
 }
+
+/* ── Crossword Game ── */
+.cw-grid {
+  display: grid;
+  gap: 2px;
+  max-width: min(100%, 360px);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cw-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-radius: 4px;
+  background: var(--cell-bg);
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: background-color 150ms, border-color 150ms;
+}
+
+.cw-cell-black {
+  background: var(--border);
+  border-color: transparent;
+  cursor: default;
+}
+
+.cw-cell-selected {
+  background: var(--cell-selected);
+  border-color: var(--cell-selected-text);
+}
+
+.cw-cell-locked {
+  background: rgba(46, 204, 113, 0.15);
+  border-color: rgba(46, 204, 113, 0.3);
+}
+
+.cw-clue-number {
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.cw-cell-char {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.cw-cell-locked .cw-cell-char {
+  color: #27ae60;
+}
+
+.cw-clues {
+  font-size: 0.85rem;
+}
+
+.cw-clue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 150ms;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.cw-clue:hover {
+  background: var(--border);
+}
+
+.cw-clue-active {
+  background: var(--cell-selected) !important;
+}
+
+.cw-clue-done {
+  opacity: 0.45;
+  text-decoration: line-through;
+  cursor: default;
+}
+
+.cw-clue-num {
+  font-weight: 800;
+  min-width: 1.2em;
+  color: var(--accent);
+}

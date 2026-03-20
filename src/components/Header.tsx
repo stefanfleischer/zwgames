@@ -6,6 +6,7 @@ export default function Header() {
   const isHome = matchRoute({ to: '/' })
   const isWordOrder = matchRoute({ to: '/word-order' })
   const isWordChain = matchRoute({ to: '/word-chain' })
+  const isCrossword = matchRoute({ to: '/crossword' })
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--header-bg)] backdrop-blur-lg">
@@ -24,6 +25,9 @@ export default function Header() {
             </Link>
             <Link to="/word-chain" className={`nav-link ${isWordChain ? 'active' : ''}`}>
               Wortkette
+            </Link>
+            <Link to="/crossword" className={`nav-link ${isCrossword ? 'active' : ''}`}>
+              Kreuzwort
             </Link>
           </div>
         </div>
