@@ -8,6 +8,7 @@ import {
   checkMatch,
   type Puzzle,
 } from '../lib/word-search'
+import { getCharPinyin } from '../lib/hsk-data'
 
 export const Route = createFileRoute('/')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -40,6 +41,12 @@ function WordSearchGame() {
   const [flashCells, setFlashCells] = useState<Set<string> | null>(null)
   const [hints, setHints] = useState<number[]>([])
   const [shakeWrong, setShakeWrong] = useState(false)
+  const [pinyinBubble, setPinyinBubble] = useState<{
+    row: number
+    col: number
+    pinyin: string
+    id: number
+  } | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -138,13 +145,27 @@ function WordSearchGame() {
     [getCellFromPoint, updatePath],
   )
 
+  const bubbleIdRef = useRef(0)
+
   const endSelection = useCallback(() => {
     if (!selectingRef.current || !puzzleRef.current) return
     selectingRef.current = false
     setIsSelecting(false)
 
     const path = pathRef.current
-    if (path.length >= 2) {
+    if (path.length === 1) {
+      // Single tap — show pinyin bubble
+      const [r, c] = path[0]
+      const char = puzzleRef.current.grid[r][c]
+      const pinyin = getCharPinyin(char)
+      if (pinyin) {
+        const id = ++bubbleIdRef.current
+        setPinyinBubble({ row: r, col: c, pinyin, id })
+        setTimeout(() => {
+          setPinyinBubble((prev) => (prev?.id === id ? null : prev))
+        }, 1200)
+      }
+    } else if (path.length >= 2) {
       const matchIdx = checkMatch(
         path,
         puzzleRef.current.grid,
@@ -261,6 +282,11 @@ function WordSearchGame() {
             else if (isSelected) cellClass += ' cell-selected'
             else if (isFound) cellClass += ' cell-found'
 
+            const showBubble =
+              pinyinBubble !== null &&
+              pinyinBubble.row === r &&
+              pinyinBubble.col === c
+
             return (
               <div
                 key={key}
@@ -274,6 +300,11 @@ function WordSearchGame() {
                 }
               >
                 {char}
+                {showBubble && (
+                  <span key={pinyinBubble.id} className="pinyin-bubble">
+                    {pinyinBubble.pinyin}
+                  </span>
+                )}
               </div>
             )
           }),

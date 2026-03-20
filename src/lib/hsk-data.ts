@@ -49,6 +49,18 @@ export function getFillerCharacters(maxLevel: number): string[] {
     .map((w) => w.hanzi)
 }
 
+/** Get pinyin for a single character (first match from single-char HSK words) */
+const charPinyinMap: Map<string, string> = new Map()
+for (const w of allWords) {
+  if (w.hanzi.length === 1 && !charPinyinMap.has(w.hanzi)) {
+    charPinyinMap.set(w.hanzi, w.pinyin)
+  }
+}
+
+export function getCharPinyin(char: string): string | null {
+  return charPinyinMap.get(char) ?? null
+}
+
 /** Get all characters from all words for filler fallback */
 export function getAllCharacters(maxLevel: number): string[] {
   const chars = new Set<string>()
