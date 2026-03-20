@@ -222,6 +222,21 @@ a { color: var(--accent); text-decoration: none; }
   color: #fff;
 }
 
+/* ── Cell Jiggle (hint nudge) ── */
+.cell-jiggle {
+  animation: cell-jiggle 600ms ease-in-out;
+}
+
+@keyframes cell-jiggle {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-6deg) scale(1.05); }
+  30% { transform: rotate(6deg) scale(1.05); }
+  45% { transform: rotate(-4deg); }
+  60% { transform: rotate(4deg); }
+  75% { transform: rotate(-2deg); }
+  90% { transform: rotate(1deg); }
+}
+
 /* ── Pinyin Bubble ── */
 .pinyin-bubble {
   position: absolute;

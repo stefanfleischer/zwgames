@@ -46,6 +46,7 @@ function WordSearchGame() {
   const [flashCells, setFlashCells] = useState<Set<string> | null>(null)
   const [hints, setHints] = useState<number[]>([])
   const [shakeWrong, setShakeWrong] = useState(false)
+  const [jiggleCells, setJiggleCells] = useState<Set<string> | null>(null)
   const [pinyinBubble, setPinyinBubble] = useState<{
     row: number
     col: number
@@ -208,7 +209,20 @@ function WordSearchGame() {
     const unfound = puzzle.placedWords
       .map((_, i) => i)
       .filter((i) => !foundIndices.has(i) && !hints.includes(i))
-    if (unfound.length === 0) return
+    if (unfound.length === 0) {
+      // All hints used — jiggle a random unfound word's cells
+      const stillHidden = puzzle.placedWords
+        .map((_, i) => i)
+        .filter((i) => !foundIndices.has(i))
+      if (stillHidden.length === 0) return
+      const pick = stillHidden[Math.floor(Math.random() * stillHidden.length)]
+      const cells = new Set(
+        puzzle.placedWords[pick].cells.map(([r, c]) => `${r},${c}`),
+      )
+      setJiggleCells(cells)
+      setTimeout(() => setJiggleCells(null), 600)
+      return
+    }
     const pick = unfound[Math.floor(Math.random() * unfound.length)]
     setHints((h) => [...h, pick])
   }
@@ -301,10 +315,13 @@ function WordSearchGame() {
             const isFound = foundIdx !== undefined
             const isFlashing = flashCells?.has(key)
 
+            const isJiggling = jiggleCells?.has(key)
+
             let cellClass = 'cell'
             if (isFlashing) cellClass += ' cell-flash'
             else if (isSelected) cellClass += ' cell-selected'
             else if (isFound) cellClass += ' cell-found'
+            if (isJiggling) cellClass += ' cell-jiggle'
 
             const showBubble =
               pinyinBubble !== null &&
