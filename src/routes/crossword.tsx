@@ -287,10 +287,9 @@ function CrosswordGame() {
         className="cw-grid mx-auto"
         style={{ gridTemplateColumns: `repeat(${puzzle.width}, 1fr)` }}
       >
-        {Array.from({ length: puzzle.height }, (_, r) =>
-          Array.from({ length: puzzle.width }, (_, c) => {
+        {puzzle.grid.flatMap((row, r) =>
+          row.map((gridChar, c) => {
             const key = `${r},${c}`
-            const gridChar = puzzle.grid[r][c]
             const isBlack = gridChar === null
             const isSelected = selectedCells.has(key)
             const isLocked = lockedCells.has(key)

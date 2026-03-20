@@ -165,7 +165,7 @@ export function generateCrossword(maxLevel: number): CrosswordPuzzle {
 
             if (validatePlacement(placement, occupied, placed)) {
               // Score by bounding box expansion
-              const allCells = getWordCells(
+              const newCells = getWordCells(
                 startRow,
                 startCol,
                 newDir,
@@ -175,15 +175,16 @@ export function generateCrossword(maxLevel: number): CrosswordPuzzle {
                 maxR = -Infinity,
                 minC = Infinity,
                 maxC = -Infinity
-              for (const [, [r, c]] of [...occupied.entries()].map(
-                ([k]) => [k, k.split(',').map(Number)] as [string, number[]],
-              )) {
+              for (const key of occupied.keys()) {
+                const parts = key.split(',')
+                const r = Number(parts[0])
+                const c = Number(parts[1])
                 minR = Math.min(minR, r)
                 maxR = Math.max(maxR, r)
                 minC = Math.min(minC, c)
                 maxC = Math.max(maxC, c)
               }
-              for (const [r, c] of allCells) {
+              for (const [r, c] of newCells) {
                 minR = Math.min(minR, r)
                 maxR = Math.max(maxR, r)
                 minC = Math.min(minC, c)
