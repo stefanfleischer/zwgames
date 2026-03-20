@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WordOrderRouteImport } from './routes/word-order'
+import { Route as WordChainRouteImport } from './routes/word-chain'
 import { Route as IndexRouteImport } from './routes/index'
 
 const WordOrderRoute = WordOrderRouteImport.update({
   id: '/word-order',
   path: '/word-order',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WordChainRoute = WordChainRouteImport.update({
+  id: '/word-chain',
+  path: '/word-chain',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -25,27 +31,31 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/word-chain': typeof WordChainRoute
   '/word-order': typeof WordOrderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/word-chain': typeof WordChainRoute
   '/word-order': typeof WordOrderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/word-chain': typeof WordChainRoute
   '/word-order': typeof WordOrderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/word-order'
+  fullPaths: '/' | '/word-chain' | '/word-order'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/word-order'
-  id: '__root__' | '/' | '/word-order'
+  to: '/' | '/word-chain' | '/word-order'
+  id: '__root__' | '/' | '/word-chain' | '/word-order'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  WordChainRoute: typeof WordChainRoute
   WordOrderRoute: typeof WordOrderRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/word-order'
       fullPath: '/word-order'
       preLoaderRoute: typeof WordOrderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/word-chain': {
+      id: '/word-chain'
+      path: '/word-chain'
+      fullPath: '/word-chain'
+      preLoaderRoute: typeof WordChainRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  WordChainRoute: WordChainRoute,
   WordOrderRoute: WordOrderRoute,
 }
 export const routeTree = rootRouteImport

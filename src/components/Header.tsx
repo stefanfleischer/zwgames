@@ -5,6 +5,7 @@ export default function Header() {
   const matchRoute = useMatchRoute()
   const isHome = matchRoute({ to: '/' })
   const isWordOrder = matchRoute({ to: '/word-order' })
+  const isWordChain = matchRoute({ to: '/word-chain' })
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--header-bg)] backdrop-blur-lg">
@@ -20,6 +21,9 @@ export default function Header() {
             </Link>
             <Link to="/word-order" className={`nav-link ${isWordOrder ? 'active' : ''}`}>
               Satzstellung
+            </Link>
+            <Link to="/word-chain" className={`nav-link ${isWordChain ? 'active' : ''}`}>
+              Wortkette
             </Link>
           </div>
         </div>
