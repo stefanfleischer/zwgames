@@ -49,11 +49,17 @@ export function getFillerCharacters(maxLevel: number): string[] {
     .map((w) => w.hanzi)
 }
 
-/** Get pinyin for a single character (first match from single-char HSK words) */
+/** Get pinyin for a single character, extracted from all HSK words */
 const charPinyinMap: Map<string, string> = new Map()
 for (const w of allWords) {
-  if (w.hanzi.length === 1 && !charPinyinMap.has(w.hanzi)) {
-    charPinyinMap.set(w.hanzi, w.pinyin)
+  const syllables = w.pinyin.split(/\s+/)
+  const chars = [...w.hanzi]
+  if (syllables.length === chars.length) {
+    for (let i = 0; i < chars.length; i++) {
+      if (!charPinyinMap.has(chars[i])) {
+        charPinyinMap.set(chars[i], syllables[i])
+      }
+    }
   }
 }
 
