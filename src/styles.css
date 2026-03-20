@@ -257,3 +257,128 @@ a { color: var(--accent); text-decoration: none; }
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.015); }
 }
+
+/* ── Word Order Game ── */
+.wo-prompt {
+  text-align: center;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+}
+
+.wo-answer-area {
+  min-height: 56px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 2px dashed var(--border);
+  background: var(--surface);
+  transition: border-color 300ms, background-color 300ms;
+}
+
+.wo-answer-area.wo-correct {
+  border-color: #2ecc71;
+  background: rgba(46, 204, 113, 0.08);
+}
+
+.wo-answer-area.wo-wrong {
+  border-color: #e74c3c;
+  background: rgba(231, 76, 60, 0.08);
+}
+
+.wo-bank {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  min-height: 48px;
+}
+
+.wo-word {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 150ms ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.wo-word:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.wo-word:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.wo-word:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.wo-word-placed {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.wo-word-placed:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: #fff;
+}
+
+.wo-feedback {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  animation: ws-pop-in 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.wo-feedback-correct {
+  background: rgba(46, 204, 113, 0.12);
+  color: #27ae60;
+  border: 1px solid rgba(46, 204, 113, 0.25);
+}
+
+.wo-feedback-wrong {
+  background: rgba(231, 76, 60, 0.12);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.25);
+}
+
+/* ── Nav Links ── */
+.nav-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 150ms, background 150ms;
+}
+
+.nav-link:hover {
+  color: var(--text);
+  background: var(--border);
+}
+
+.nav-link.active {
+  color: var(--accent);
+}
