@@ -1,7 +1,17 @@
 import { type HskWord, getWordsUpToLevel, getAllCharacters } from './hsk-data'
 
-export const GRID_SIZE = 8
-export const WORD_COUNT = 10
+export const GRID_SIZES = [7, 8, 9, 10] as const
+export type GridSize = (typeof GRID_SIZES)[number]
+
+/** Word count scales with grid size */
+export function getWordCount(gridSize: GridSize): number {
+  switch (gridSize) {
+    case 7: return 6
+    case 8: return 8
+    case 9: return 10
+    case 10: return 12
+  }
+}
 
 export interface PlacedWord {
   word: HskWord
@@ -11,6 +21,7 @@ export interface PlacedWord {
 export interface Puzzle {
   grid: string[][]
   placedWords: PlacedWord[]
+  wordCount: number
 }
 
 type Direction = [number, number] // [dRow, dCol]
@@ -34,12 +45,12 @@ function shuffle<T>(arr: T[]): T[] {
 function tryPlaceWord(
   grid: (string | null)[][],
   word: string,
+  gridSize: number,
 ): [number, number][] | null {
   const dirs = shuffle(DIRECTIONS)
 
-  // Try each direction with random starting positions
   for (const [dr, dc] of dirs) {
-    const positions = generateStartPositions(word.length, dr, dc)
+    const positions = generateStartPositions(word.length, dr, dc, gridSize)
     for (const [startR, startC] of shuffle(positions)) {
       const cells: [number, number][] = []
       let valid = true
@@ -65,13 +76,14 @@ function generateStartPositions(
   wordLen: number,
   dr: number,
   dc: number,
+  gridSize: number,
 ): [number, number][] {
   const positions: [number, number][] = []
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
+  for (let r = 0; r < gridSize; r++) {
+    for (let c = 0; c < gridSize; c++) {
       const endR = r + (wordLen - 1) * dr
       const endC = c + (wordLen - 1) * dc
-      if (endR >= 0 && endR < GRID_SIZE && endC >= 0 && endC < GRID_SIZE) {
+      if (endR >= 0 && endR < gridSize && endC >= 0 && endC < gridSize) {
         positions.push([r, c])
       }
     }
@@ -79,25 +91,24 @@ function generateStartPositions(
   return positions
 }
 
-export function generatePuzzle(maxLevel: number): Puzzle {
+export function generatePuzzle(maxLevel: number, gridSize: GridSize = 8): Puzzle {
+  const wordCount = getWordCount(gridSize)
   const available = getWordsUpToLevel(maxLevel)
-  if (available.length < WORD_COUNT) {
+  if (available.length < wordCount) {
     throw new Error(`Not enough words for level ${maxLevel}`)
   }
 
-  // Try generating a valid puzzle (retry if placement fails)
   for (let attempt = 0; attempt < 50; attempt++) {
-    const candidates = shuffle(available).slice(0, WORD_COUNT * 3) // Pick extra candidates
-    const grid: (string | null)[][] = Array.from({ length: GRID_SIZE }, () =>
-      Array(GRID_SIZE).fill(null),
+    const candidates = shuffle(available).slice(0, wordCount * 3)
+    const grid: (string | null)[][] = Array.from({ length: gridSize }, () =>
+      Array(gridSize).fill(null),
     )
     const placedWords: PlacedWord[] = []
 
     for (const word of candidates) {
-      if (placedWords.length >= WORD_COUNT) break
-      const cells = tryPlaceWord(grid, word.hanzi)
+      if (placedWords.length >= wordCount) break
+      const cells = tryPlaceWord(grid, word.hanzi, gridSize)
       if (cells) {
-        // Place the word on the grid
         for (let i = 0; i < word.hanzi.length; i++) {
           grid[cells[i][0]][cells[i][1]] = word.hanzi[i]
         }
@@ -105,8 +116,7 @@ export function generatePuzzle(maxLevel: number): Puzzle {
       }
     }
 
-    if (placedWords.length === WORD_COUNT) {
-      // Fill empty cells with random characters
+    if (placedWords.length === wordCount) {
       const fillers = getAllCharacters(maxLevel)
       const finalGrid = grid.map((row) =>
         row.map((cell) =>
@@ -115,7 +125,7 @@ export function generatePuzzle(maxLevel: number): Puzzle {
             : fillers[Math.floor(Math.random() * fillers.length)],
         ),
       )
-      return { grid: finalGrid, placedWords }
+      return { grid: finalGrid, placedWords, wordCount }
     }
   }
 

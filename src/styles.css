@@ -77,8 +77,9 @@ a { color: var(--accent); text-decoration: none; }
 
 /* ── HSK Level Pills ── */
 .hsk-pill {
-  width: 36px;
+  min-width: 36px;
   height: 36px;
+  padding: 0 10px;
   border-radius: 10px;
   border: 1.5px solid var(--border);
   background: var(--surface);

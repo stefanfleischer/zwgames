@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  GRID_SIZE,
-  WORD_COUNT,
+  GRID_SIZES,
+  type GridSize,
+  getWordCount,
   generatePuzzle,
   isAdjacent,
   checkMatch,
@@ -13,6 +14,9 @@ import { getCharPinyin } from '../lib/hsk-data'
 export const Route = createFileRoute('/')({
   validateSearch: (search: Record<string, unknown>) => ({
     hsk: Math.min(6, Math.max(1, Number(search.hsk) || 1)),
+    size: (GRID_SIZES as readonly number[]).includes(Number(search.size))
+      ? (Number(search.size) as GridSize)
+      : 8 as GridSize,
   }),
   component: WordSearchGame,
 })
@@ -31,8 +35,9 @@ const WORD_COLORS = [
 ]
 
 function WordSearchGame() {
-  const { hsk } = Route.useSearch()
+  const { hsk, size } = Route.useSearch()
   const navigate = useNavigate()
+  const wordCount = getWordCount(size)
 
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null)
   const [foundIndices, setFoundIndices] = useState<Set<number>>(new Set())
@@ -50,11 +55,11 @@ function WordSearchGame() {
   const gridRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    setPuzzle(generatePuzzle(hsk))
+    setPuzzle(generatePuzzle(hsk, size))
     setFoundIndices(new Set())
     setSelectedPath([])
     setHints([])
-  }, [hsk])
+  }, [hsk, size])
 
   const foundCellColors = useMemo(() => {
     if (!puzzle) return new Map<string, number>()
@@ -192,7 +197,7 @@ function WordSearchGame() {
   // No native touch handler needed — we use pointer events with releasePointerCapture
 
   const handleNewGame = () => {
-    setPuzzle(generatePuzzle(hsk))
+    setPuzzle(generatePuzzle(hsk, size))
     setFoundIndices(new Set())
     setSelectedPath([])
     setHints([])
@@ -209,17 +214,22 @@ function WordSearchGame() {
   }
 
   const setLevel = (level: number) => {
-    navigate({ to: '/', search: { hsk: level } })
+    navigate({ to: '/', search: { hsk: level, size } })
   }
 
-  const isWon = puzzle !== null && foundIndices.size === WORD_COUNT
+  const setGridSize = (newSize: GridSize) => {
+    navigate({ to: '/', search: { hsk, size: newSize } })
+  }
+
+  const isWon = puzzle !== null && foundIndices.size === wordCount
 
   if (!puzzle) return null
 
   return (
     <main className="mx-auto max-w-lg px-3 pb-6 pt-3">
       {/* HSK Level Pills */}
-      <div className="mb-4 flex items-center justify-center gap-1.5">
+      <div className="mb-3 flex items-center justify-center gap-1.5">
+        <span className="mr-1 text-xs font-medium text-[var(--text-muted)]">HSK</span>
         {[1, 2, 3, 4, 5, 6].map((level) => (
           <button
             key={level}
@@ -231,16 +241,30 @@ function WordSearchGame() {
         ))}
       </div>
 
+      {/* Grid Size Pills */}
+      <div className="mb-4 flex items-center justify-center gap-1.5">
+        <span className="mr-1 text-xs font-medium text-[var(--text-muted)]">Gitter</span>
+        {GRID_SIZES.map((gs) => (
+          <button
+            key={gs}
+            onClick={() => setGridSize(gs)}
+            className={`hsk-pill ${size === gs ? 'active' : ''}`}
+          >
+            {gs}×{gs}
+          </button>
+        ))}
+      </div>
+
       {/* Progress bar */}
       <div className="mb-4">
         <div className="progress-track">
           <div
             className="progress-fill"
-            style={{ width: `${(foundIndices.size / WORD_COUNT) * 100}%` }}
+            style={{ width: `${(foundIndices.size / wordCount) * 100}%` }}
           />
         </div>
         <p className="mt-1.5 text-center text-xs font-medium text-[var(--text-muted)]">
-          {foundIndices.size} / {WORD_COUNT}
+          {foundIndices.size} / {wordCount}
         </p>
       </div>
 
@@ -258,7 +282,7 @@ function WordSearchGame() {
         ref={gridRef}
         className={`game-grid mx-auto ${shakeWrong ? 'ws-shake' : ''}`}
         style={{
-          gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
+          gridTemplateColumns: `repeat(${size}, 1fr)`,
         }}
         onPointerDown={(e) => {
           e.currentTarget.releasePointerCapture(e.pointerId)
